@@ -1,6 +1,4 @@
-/logs/
-/target/
-/dist/
 .settings
 .classpath
 .project
+/target/
