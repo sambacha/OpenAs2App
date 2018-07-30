@@ -1,17 +1,15 @@
 package org.openas2.util;
 
-import java.io.*;
-import java.net.Authenticator;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.PasswordAuthentication;
-import java.net.Proxy;
-import java.net.SocketException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLEncoder;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.*;
 import java.security.KeyStore;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -45,6 +43,9 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.ByteArrayEntity;
@@ -52,7 +53,7 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.apache.http.ssl.SSLContexts;
 import org.openas2.OpenAS2Exception;
 import org.openas2.WrappedException;
@@ -325,101 +326,110 @@ public class HTTPUtil {
 	 * @throws Exception
 	 */
 	public static ResponseWrapper execRequest(String method, String url
-			, Enumeration<Header> headers, NameValuePair[] params
-			, InputStream inputStream, Map<String, String> options, long noChunkMaxSize) throws Exception {
+	    , Enumeration<Header> headers, NameValuePair[] params
+	    , InputStream inputStream, Map<String, String> options, long noChunkMaxSize) throws Exception {
 
-		String connectTimeOutStr = options.get(PARAM_CONNECT_TIMEOUT);
-		String readTimeOutStr = options.get(PARAM_READ_TIMEOUT);
-		String socketTimeOutStr = options.get(PARAM_SOCKET_TIMEOUT);
-		CloseableHttpClient httpClient = null;
-		CloseableHttpResponse response = null;
-		HttpClientBuilder httpBuilder = HttpClientBuilder.create();
-		RequestConfig.Builder cfgBuilder = RequestConfig.custom();
-		if (connectTimeOutStr != null) cfgBuilder.setConnectTimeout(Integer.parseInt(connectTimeOutStr));
-		if (readTimeOutStr != null) cfgBuilder.setConnectionRequestTimeout(Integer.parseInt(readTimeOutStr));
-		if (socketTimeOutStr != null) cfgBuilder.setSocketTimeout(Integer.parseInt(socketTimeOutStr));
-		RequestConfig config = cfgBuilder.build();
+	    HttpClientBuilder httpBuilder = HttpClientBuilder.create();
+	    SSLConnectionSocketFactory sslCsf = null;
+        URL urlObj = new URL(url);
+	    if (needSsl(urlObj)) {
+	        /*
+	         * Must be registered via connection manager (see below),
+	         * registration via httpBuilder.setSSLSocketFactory is ignored when a connection manager is set.
+	         */
+	        sslCsf = buildSslFactory(urlObj, options);
+	    }
 
-		URL urlObj = new URL(url);
+	    RequestBuilder rb = getRequestBuilder(method, urlObj, params, headers);
+	    rb.setConfig(buildRequestConfig(options));
+	    setProxyConfig(httpBuilder, rb, urlObj.getProtocol());
 
-		if (urlObj.getProtocol().equalsIgnoreCase("https")) {
-			boolean overrideSslChecks = "true".equalsIgnoreCase(options.get(HTTPUtil.HTTP_PROP_OVERRIDE_SSL_CHECKS));
-			SSLContext sslcontext;
-			String selfSignedCN = System.getProperty("org.openas2.cert.TrustSelfSignedCN");
-			if ((selfSignedCN != null && selfSignedCN.contains(urlObj.getHost())) || overrideSslChecks) {
-				File file = getTrustedCertsKeystore();
-				InputStream in = new FileInputStream(file);
-				try {
-					KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-					ks.load(in, "changeit".toCharArray());
-					in.close();
-
-					// Trust own CA and all self-signed certs
-					sslcontext = SSLContexts.custom().loadTrustMaterial(ks, new TrustSelfSignedStrategy()).build();
-					// Allow TLSv1 protocol only by default
-				} catch (Exception e) {
-					throw new OpenAS2Exception("Self-signed certificate URL connection failed connecting to : " + url,
-							e);
-				}
-			} else {
-				sslcontext = SSLContexts.createSystemDefault();
-			}
-			// String [] protocols = Properties.getProperty(HTTP_PROP_SSL_PROTOCOLS,
-			// "TLSv1").split("\\s*,\\s*");
-			HostnameVerifier hnv = SSLConnectionSocketFactory.getDefaultHostnameVerifier();
-			if (overrideSslChecks) {
-				hnv = new HostnameVerifier() {
-					@Override
-					public boolean verify(String hostname, SSLSession session) {
-						return true;
-					}
-				};
-			}
-
-			SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslcontext, null, null,
-					hnv);
-			httpBuilder = HttpClients.custom().setSSLSocketFactory(sslsf);
-		}
-
-		try {
-			RequestBuilder rb = getRequestBuilder(method, urlObj, params, headers);
-			rb.setConfig(config);
-			setProxyConfig(httpBuilder, rb, urlObj.getProtocol());
-
- 			if (inputStream != null) {
- 			    if (noChunkMaxSize > 0L) {
-                    ByteArrayOutputStream bout = new ByteArrayOutputStream();
-                    long copied = IOUtils.copyLarge(inputStream, bout, 0L, noChunkMaxSize + 1, new byte[8192]);
-                    if (copied > noChunkMaxSize) {
-                        throw new IOException("Mime inputstream too big to put in memory (more than " + noChunkMaxSize + " bytes).");
-                    }
-                    ByteArrayEntity bae = new ByteArrayEntity(bout.toByteArray(), null);
-                    rb.setEntity(bae);
- 			    } else {
-                    InputStreamEntity ise = new InputStreamEntity(inputStream);
-                    rb.setEntity(ise);
- 			    }
-			}
-			httpClient = httpBuilder.build();
-            ProfilerStub transferStub = Profiler.startProfile();
-			response = httpClient.execute(rb.build());
-            Profiler.endProfile(transferStub);
-            ResponseWrapper resp = new ResponseWrapper(response);
-            resp.setTransferTimeMs( transferStub.getMilliseconds());
-            for (org.apache.http.Header header : response.getAllHeaders()) {
-				resp.addHeaderLine(header.toString());
-			}
-			return resp;
-		} catch (Exception e) {
-			throw e;
-		} finally {
-			if (httpClient != null) httpClient.close();
-			if (response!= null) response.close();
-		}
+	    if (inputStream != null) {
+	        if (noChunkMaxSize > 0L) {
+	            ByteArrayOutputStream bout = new ByteArrayOutputStream();
+	            long copied = IOUtils.copyLarge(inputStream, bout, 0L, noChunkMaxSize + 1, new byte[8192]);
+	            if (copied > noChunkMaxSize) {
+	                throw new IOException("Mime inputstream too big to put in memory (more than " + noChunkMaxSize + " bytes).");
+	            }
+	            ByteArrayEntity bae = new ByteArrayEntity(bout.toByteArray(), null);
+	            rb.setEntity(bae);
+	        } else {
+	            InputStreamEntity ise = new InputStreamEntity(inputStream);
+	            rb.setEntity(ise);
+	        }
+	    }
+	    /*
+	     * httpClient is used for this request only,
+	     * set a connection manager that manages just one connection. 
+	     */
+	    if (sslCsf == null) {
+	        httpBuilder.setConnectionManager(new BasicHttpClientConnectionManager());
+	    } else {
+	        httpBuilder.setConnectionManager(new BasicHttpClientConnectionManager(
+	            RegistryBuilder.<ConnectionSocketFactory>create()
+                .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                .register("https", sslCsf)
+                .build()
+            ));
+	    }
+	    try (CloseableHttpClient httpClient = httpBuilder.build()) {
+	        ProfilerStub transferStub = Profiler.startProfile();
+	        try (CloseableHttpResponse response = httpClient.execute(rb.build())) {
+	            ResponseWrapper resp = new ResponseWrapper(response);
+	            Profiler.endProfile(transferStub);
+	            resp.setTransferTimeMs( transferStub.getMilliseconds());
+	            for (org.apache.http.Header header : response.getAllHeaders()) {
+	                resp.addHeaderLine(header.toString());
+	            }
+	            return resp;
+	        }
+	    }
 	}
-
-    protected static RequestBuilder getRequestBuilder(String method, URL urlObj
+	
+	private static boolean needSsl(URL urlObj) {
+	    return urlObj.getProtocol().equalsIgnoreCase("https");
+	}
+	
+	private static SSLConnectionSocketFactory buildSslFactory(URL urlObj, Map<String, String> options) throws Exception {
+	    
+        boolean overrideSslChecks = "true".equalsIgnoreCase(options.get(HTTPUtil.HTTP_PROP_OVERRIDE_SSL_CHECKS));
+        SSLContext sslcontext;
+        String selfSignedCN = System.getProperty("org.openas2.cert.TrustSelfSignedCN");
+        if ((selfSignedCN != null && selfSignedCN.contains(urlObj.getHost())) || overrideSslChecks) {
+            File file = getTrustedCertsKeystore();
+            KeyStore ks = null;
+            try (InputStream in = new FileInputStream(file)) {
+                ks = KeyStore.getInstance(KeyStore.getDefaultType());
+                ks.load(in, "changeit".toCharArray());
+            }
+            try {
+                // Trust own CA and all self-signed certs
+                sslcontext = SSLContexts.custom().loadTrustMaterial(ks, new TrustSelfSignedStrategy()).build();
+                // Allow TLSv1 protocol only by default
+            } catch (Exception e) {
+                throw new OpenAS2Exception("Self-signed certificate URL connection failed connecting to : " + urlObj.toString(), e);
+            }
+        } else {
+            sslcontext = SSLContexts.createSystemDefault();
+        }
+        // String [] protocols = Properties.getProperty(HTTP_PROP_SSL_PROTOCOLS,
+        // "TLSv1").split("\\s*,\\s*");
+        HostnameVerifier hnv = SSLConnectionSocketFactory.getDefaultHostnameVerifier();
+        if (overrideSslChecks) {
+            hnv = new HostnameVerifier() {
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            };
+        }
+        SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslcontext, null, null, hnv);
+        return sslsf;
+	}
+	
+    private static RequestBuilder getRequestBuilder(String method, URL urlObj
     		, NameValuePair[] params, Enumeration<Header> headers) throws URISyntaxException {
+        
     	RequestBuilder req = null;
         if (method == null || method.equalsIgnoreCase(Method.GET)) {
             //default get
@@ -452,6 +462,19 @@ public class HTTPUtil {
 			}
 		}
 		return req;
+    }
+
+    private static RequestConfig buildRequestConfig(Map<String, String> options) {
+
+        String connectTimeOutStr = options.get(PARAM_CONNECT_TIMEOUT);
+        String readTimeOutStr = options.get(PARAM_READ_TIMEOUT);
+        String socketTimeOutStr = options.get(PARAM_SOCKET_TIMEOUT);
+        RequestConfig.Builder cfgBuilder = RequestConfig.custom();
+        if (connectTimeOutStr != null) cfgBuilder.setConnectTimeout(Integer.parseInt(connectTimeOutStr));
+        if (readTimeOutStr != null) cfgBuilder.setConnectionRequestTimeout(Integer.parseInt(readTimeOutStr));
+        if (socketTimeOutStr != null) cfgBuilder.setSocketTimeout(Integer.parseInt(socketTimeOutStr));
+        RequestConfig config = cfgBuilder.build();
+        return config;
     }
 
 	/*
