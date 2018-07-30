@@ -218,8 +218,8 @@ public class DbTrackingModule extends BaseMsgTrackingModule
 		case Types.TINYINT:
 		//case Types.ROWID:
 			return value;
-		case Types.TIME_WITH_TIMEZONE:
-		case Types.TIMESTAMP_WITH_TIMEZONE:
+		//Java 8 case Types.TIME_WITH_TIMEZONE:
+		// Java 8 case Types.TIMESTAMP_WITH_TIMEZONE:
 		case Types.DATE:
 		case Types.TIME:
 		case Types.TIMESTAMP:
