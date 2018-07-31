@@ -311,4 +311,12 @@
 		</profile>
 	</profiles>
 
+	<distributionManagement>
+		<repository>
+			<id>mule-releases</id>
+			<name>Nexus Public Releases</name>
+			<url>https://repository-master.mulesoft.org/nexus/content/repositories/releases/</url>
+		</repository>
+	</distributionManagement>
+
 </project>
