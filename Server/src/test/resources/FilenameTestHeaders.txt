@@ -1,0 +1,17 @@
+Content-Type: application/EDIFACT
+Date: 18 Sep 2018 04:13:21 GMT
+From: as2@127.0.0.1
+Message-Id: <2018-09-18-622c7ba2-67c8-4760-a712-b6f5d3ab0a3d>
+Subject: AS2 Message
+AS2-Version: 1.1
+AS2-From: AS2FROMDUMMY
+AS2-To: AS2TODUMMY
+Disposition-Notification-To: as2@127.0.0.1
+Disposition-Notification-Options: signed-receipt-protocol=optional, pkcs7-signature; signed-receipt-micalg=optional, sha1
+Content-Transfer-Encoding: binary
+Content-Disposition: attachment; filename=2018-09-18-06:13:16.DUMMY.1234567890.xml.edifactDEADBEEF
+Content-Description: S/MIME Encrypted Message
+Content-Length: 1234
+Host: openas2.example.com:4080
+Connection: Keep-Alive
+User-Agent: Apache-HttpAsyncClient/UNAVAILABLE (Java/1.8.0_181)
