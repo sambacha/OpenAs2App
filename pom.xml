@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.mulesoft.connectors</groupId>
 	<artifactId>mule-openas2-impl</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<name>OpenAS2</name>
 	<packaging>pom</packaging>
 

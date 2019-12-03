@@ -7,9 +7,9 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.UUID;
 
-import org.apache.commons.io.FileUtils;
 import org.openas2.OpenAS2Exception;
 import org.openas2.message.InvalidMessageException;
 
@@ -179,7 +179,7 @@ public class IOUtil {
         }
 
         //copyFile(src, dest); //todo why copy??
-        FileUtils.copyFile(src, dest); //
+        Files.copy(src.toPath(),dest.toPath()); //
 
 
         //if (!new File(file.getAbsolutePath()).delete()) {  // do this if file deletion always fails, may help
