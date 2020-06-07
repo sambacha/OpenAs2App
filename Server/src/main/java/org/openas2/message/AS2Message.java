@@ -1,19 +1,11 @@
 package org.openas2.message;
 
-import org.openas2.params.CompositeParameters;
-import org.openas2.params.DateParameters;
 import org.openas2.params.InvalidParameterException;
-import org.openas2.params.MessageParameters;
-import org.openas2.params.ParameterParser;
-import org.openas2.params.RandomParameters;
-import org.openas2.partner.AS2Partnership;
 import org.openas2.partner.Partnership;
 
 
 public class AS2Message extends BaseMessage implements Message {
-    /**
-	 * 
-	 */
+
 	private static final long serialVersionUID = 1L;
 	public static final String PROTOCOL_AS2 = "as2";
 	
@@ -22,17 +14,7 @@ public class AS2Message extends BaseMessage implements Message {
     }
 
     public String generateMessageID() throws InvalidParameterException {
-    	CompositeParameters params = 
-    		new CompositeParameters(false).
-    			add("date", new DateParameters()).
-    			add("msg", new MessageParameters(this)).
-    			add("rand", new RandomParameters());
-        
-    	String idFormat = getPartnership().getAttribute(AS2Partnership.PA_MESSAGEID);
-    	if (idFormat == null) {
-    		idFormat = "OPENAS2-$date.ddMMyyyyHHmmssZ$-$rand.1234$@$msg.sender.as2_id$_$msg.receiver.as2_id$";
-    	}
-  		return ParameterParser.parse(idFormat, params);
+    	return org.openas2.util.AS2Util.generateMessageID(this, false);
     }
 
     public boolean isRequestingMDN() {
@@ -43,8 +25,8 @@ public class AS2Message extends BaseMessage implements Message {
 
     public boolean isConfiguredForMDN() {
     	Partnership p = getPartnership();
-        return ((p.getAttribute(AS2Partnership.PA_AS2_MDN_TO) != null) 
-        		&& (p.getAttribute(AS2Partnership.PA_AS2_MDN_OPTIONS) != null));
+        return ((p.getAttribute(Partnership.PA_AS2_MDN_TO) != null) 
+        		&& (p.getAttribute(Partnership.PA_AS2_MDN_OPTIONS) != null));
 
     }
 
@@ -55,7 +37,7 @@ public class AS2Message extends BaseMessage implements Message {
     
     public boolean isConfiguredForAsynchMDN() {
     	Partnership p = getPartnership();
-        return (p.getAttribute(AS2Partnership.PA_AS2_RECEIPT_OPTION) != null);
+        return (p.getAttribute(Partnership.PA_AS2_RECEIPT_OPTION) != null);
     }
     
     public String getAsyncMDNurl() {

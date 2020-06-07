@@ -14,13 +14,15 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMultipart;
 
+import org.openas2.lib.message.AS2Standards;
+
 
 public class DispositionDataContentHandler implements DataContentHandler {
     private static final ActivationDataFlavor ADF1;
     private static final DataFlavor[] ADFs;
 
     static {
-        ADF1 = new ActivationDataFlavor(MimeBodyPart.class, "message/disposition-notification",
+        ADF1 = new ActivationDataFlavor(MimeBodyPart.class, AS2Standards.DISPOSITION_TYPE,
                 "Disposition Notification");
         ADFs = new DataFlavor[] { ADF1 };
     }
