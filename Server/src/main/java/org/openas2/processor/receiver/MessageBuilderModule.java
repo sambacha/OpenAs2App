@@ -15,6 +15,7 @@ import javax.activation.DataHandler;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeBodyPart;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openas2.OpenAS2Exception;
@@ -26,12 +27,10 @@ import org.openas2.message.Message;
 import org.openas2.params.InvalidParameterException;
 import org.openas2.params.MessageParameters;
 import org.openas2.params.ParameterParser;
-import org.openas2.partner.AS2Partnership;
 import org.openas2.partner.Partnership;
 import org.openas2.processor.resender.ResenderModule;
 import org.openas2.processor.sender.SenderModule;
 import org.openas2.util.AS2Util;
-import org.openas2.util.IOUtilOld;
 
 
 public abstract class MessageBuilderModule extends BaseReceiverModule {
@@ -53,12 +52,10 @@ public abstract class MessageBuilderModule extends BaseReceiverModule {
 
 	protected Message processDocument(InputStream ip, String filename) throws OpenAS2Exception, FileNotFoundException
 	{
-		Message msg = createMessage();
-		msg.setAttribute(FileAttribute.MA_FILENAME, filename);
-		msg.setPayloadFilename(filename);
+		Message msg = buildMessageMetadata(filename);
 
-		String pendingFile = AS2Util.buildPendingFileName(msg, getSession().getProcessor(), "pendingmdn");
-		msg.setAttribute(FileAttribute.MA_PENDINGFILE, pendingFile);
+		String pendingFile = msg.getAttribute(FileAttribute.MA_PENDINGFILE);
+		// Persist the file that has been passed in
 		File doc = new File(pendingFile);
 		FileOutputStream fo = null;
 		try
@@ -70,7 +67,7 @@ public abstract class MessageBuilderModule extends BaseReceiverModule {
 		}
 		try
 		{
-			IOUtilOld.copy(ip, fo);
+			IOUtils.copy(ip, fo);
 		} catch (IOException e1)
 		{
 			fo = null;
@@ -94,14 +91,11 @@ public abstract class MessageBuilderModule extends BaseReceiverModule {
 			e1.printStackTrace();
 		}
 		fo = null;
-		msg.setAttribute(FileAttribute.MA_ERROR_DIR, getParameter(PARAM_ERROR_DIRECTORY, true));
-		if (getParameter(PARAM_SENT_DIRECTORY, false) != null)
-			msg.setAttribute(FileAttribute.MA_SENT_DIR, getParameter(PARAM_SENT_DIRECTORY, false));
 
 		FileInputStream fis = new FileInputStream(doc);
 		try 
 		{
-			updateMessage(msg, fis, filename);
+			buildMessageData(msg, fis, filename);
 		}
 		finally
 		{
@@ -116,11 +110,11 @@ public abstract class MessageBuilderModule extends BaseReceiverModule {
 			fis = null;
 			doc = null;
 		}
-		String customHeaderList = msg.getPartnership().getAttribute(AS2Partnership.PA_CUSTOM_MIME_HEADER_NAMES_FROM_FILENAME);
+		String customHeaderList = msg.getPartnership().getAttribute(Partnership.PA_CUSTOM_MIME_HEADER_NAMES_FROM_FILENAME);
 		if (customHeaderList != null && customHeaderList.length() > 0)
 		{
 			String[] headerNames = customHeaderList.split("\\s*,\\s*");
-			String delimiters = msg.getPartnership().getAttribute(AS2Partnership.PA_CUSTOM_MIME_HEADER_NAME_DELIMITERS_IN_FILENAME);
+			String delimiters = msg.getPartnership().getAttribute(Partnership.PA_CUSTOM_MIME_HEADER_NAME_DELIMITERS_IN_FILENAME);
 			if (logger.isTraceEnabled()) logger.trace("Adding custom headers based on message file name to custom headers map. Delimeters: " + delimiters + msg.getLogMsgID());
 			if (delimiters != null)
 			{
@@ -144,7 +138,7 @@ public abstract class MessageBuilderModule extends BaseReceiverModule {
 			}
 			else
 			{
-				String regex = msg.getPartnership().getAttribute(AS2Partnership.PA_CUSTOM_MIME_HEADER_NAMES_REGEX_ON_FILENAME);
+				String regex = msg.getPartnership().getAttribute(Partnership.PA_CUSTOM_MIME_HEADER_NAMES_REGEX_ON_FILENAME);
 				if (regex != null)
 				{
 				    Pattern p = Pattern.compile(regex);
@@ -174,7 +168,7 @@ public abstract class MessageBuilderModule extends BaseReceiverModule {
 		if (logger.isTraceEnabled())
 			logger.trace("PARTNERSHIP parms: " + msg.getPartnership().getAttributes() + msg.getLogMsgID());
 		// Retry count - first try on partnership then directory polling module
-		String maxRetryCnt = msg.getPartnership().getAttribute(AS2Partnership.PA_RESEND_MAX_RETRIES);
+		String maxRetryCnt = msg.getPartnership().getAttribute(Partnership.PA_RESEND_MAX_RETRIES);
 		if (maxRetryCnt == null || maxRetryCnt.length() < 1)
 		{
 			maxRetryCnt = getSession().getProcessor().getParameters().get(PARAM_RESEND_MAX_RETRIES);
@@ -212,8 +206,11 @@ public abstract class MessageBuilderModule extends BaseReceiverModule {
 
 	protected abstract Message createMessage();
 
-	public void updateMessage(Message msg, InputStream ip, String filename) throws OpenAS2Exception
+	public Message buildMessageMetadata(String filename) throws OpenAS2Exception
 	{
+		Message msg = createMessage();
+		msg.setAttribute(FileAttribute.MA_FILENAME, filename);
+		msg.setPayloadFilename(filename);
 		MessageParameters params = new MessageParameters(msg);
 
 		// Get the parameter that should provide the link between the polled directory and an AS2 sender and recipient
@@ -236,9 +233,22 @@ public abstract class MessageBuilderModule extends BaseReceiverModule {
 		getSession().getPartnershipFactory().updatePartnership(msg, true);
 		msg.updateMessageID();
 		// Set the sender and receiver in the Message object headers
-		msg.setHeader("AS2-To", msg.getPartnership().getReceiverID(AS2Partnership.PID_AS2));
-		msg.setHeader("AS2-From", msg.getPartnership().getSenderID(AS2Partnership.PID_AS2));
+		msg.setHeader("AS2-To", msg.getPartnership().getReceiverID(Partnership.PID_AS2));
+		msg.setHeader("AS2-From", msg.getPartnership().getSenderID(Partnership.PID_AS2));
+		// Now build the filename since it is by default dependent on having sender and receiver ID
+		String pendingFile = AS2Util.buildPendingFileName(msg, getSession().getProcessor(), "pendingmdn");
+		msg.setAttribute(FileAttribute.MA_PENDINGFILE, pendingFile);
+		msg.setAttribute(FileAttribute.MA_ERROR_DIR, getParameter(PARAM_ERROR_DIRECTORY, true));
+		if (getParameter(PARAM_SENT_DIRECTORY, false) != null)
+			msg.setAttribute(FileAttribute.MA_SENT_DIR, getParameter(PARAM_SENT_DIRECTORY, false));
 
+		return msg;
+
+	}
+
+	public void buildMessageData(Message msg, InputStream ip, String filename) throws OpenAS2Exception
+	{
+		MessageParameters params = new MessageParameters(msg);
 
 		try
 		{
@@ -303,5 +313,4 @@ public abstract class MessageBuilderModule extends BaseReceiverModule {
 			}
 		}
 	}
-
 }
