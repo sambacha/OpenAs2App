@@ -4,12 +4,12 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>net.sf.openas2</groupId>
-		<artifactId>OpenAS2</artifactId>
-		<version>2.5.0</version>
+		<groupId>com.mulesoft.connectors</groupId>
+		<artifactId>mule-openas2-impl</artifactId>
+		<version>1.0.1</version>
 	</parent>
 
-	<artifactId>openas2-server</artifactId>
+	<artifactId>mule-openas2-server-impl</artifactId>
 
 	<name>OpenAS2 Server</name>
 	<description>
@@ -25,6 +25,7 @@
 		<release.history>${project.basedir}/../changes.txt</release.history>
 	</properties>
 
+	<!--
 	<distributionManagement>
 		<site>
 			<id>openas2.sf.net</id>
@@ -32,6 +33,7 @@
 			<url>sftp://web.sourceforge.net/home/project-web/openas2/htdocs/test</url>
 		</site>
 	</distributionManagement>
+	-->
 
 	<build>
 		<plugins>
@@ -104,6 +106,14 @@
 					<generatedSiteDirectory>false</generatedSiteDirectory>
 					<generateSitemap>false</generateSitemap>
 					<generateProjectInfo>false</generateProjectInfo>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.12.4</version>
+				<configuration>
+					<argLine>-Dorg.apache.commons.logging.Log=org.openas2.logging.Log</argLine>
 				</configuration>
 			</plugin>
 		</plugins>
