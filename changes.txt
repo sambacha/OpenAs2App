@@ -1,3 +1,125 @@
+Version 2.10.0 - 2019-09-29
+This is a minor enhancement release:
+       **IMPORTANT NOTE**: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading
+
+  1. Components in the config.xml file are now enabled and disabled by an "enabled" attribute on the component. See the documentation in the section 6 "Application Configuration" on how this works.
+  2. Support using a custom properties file to override properties in the config.xml file. See the documentation in the section 6.1 "System Properties" on how this works.
+
+Version 2.9.4 - 2019-09-18
+This is a minior bugfix release:
+       **IMPORTANT NOTE**: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading
+
+  1. Clean sent/error file names for file system compatibility
+
+Version 2.9.3 - 2019-09-05
+This is a minior enhancement release:
+       **IMPORTANT NOTE**: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading
+
+  1. Allowed defining a custom fallback file name for received fiels where partner does not send file name. See section 6.3 of the OpenAS2HowTo and the as2_receive_message_filename_fallback attribute.
+  2. Upgraded BouncyCastle libraries to 1.62 to support Java 12
+
+Version 2.9.2 - 2019-08-16
+This is a an enhancement and bugfix release:
+       **IMPORTANT NOTE**: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading
+
+  1. Fixed error where DB tracking module was not logging fields to database.
+  2. Added a script to connect to the H2 database from the command line.
+  3. Simplified the default config.xml for changing ports by using properties.
+  4. Added support for location of the config.xml using an environment variable in the start-openas2.sh file
+  5. Document stored_sent_filename and stored_error_filename as well as provide more examples for setting errordir and sentdir using extended dynamic variables
+
+Version 2.9.1 - 2019-08-03
+This is a an enhancement and bugfix release:
+       **IMPORTANT NOTE**: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading
+
+  1. Support additional filters on logging to support reduced email logger errors flagging interface errors due to exernal access attemopts to AS2 server..
+  2. Fixed error where DB tracking module was not logging fields to database.
+  3. Documented additional logging filters.
+  4. Support for dynamic variables in sentDir and errorDir attributes in the config.
+  5. Enhanced the remote command processor to support text output format.
+  6. Updarted remote command processor documentation.
+  7. Added a script to run the remote command interface from the command line.
+  8. Included the remote socket command processor app jar into the release package to allow use without a separate effort to set up.
+
+Version 2.9.0 - 2019-03-28
+This is a an enhancement and bugfix release:
+       **IMPORTANT NOTE**: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading
+
+  1. Provide ability to dynamically set the target URL for the partner based on directory polling mopdule configuration.
+  2. Add tracking of sent file name to database tracking of AS2 messages (see upgrade notes for upgrading)
+  3. Document the mechanism for using the dynamic URL feature
+  4. Update documentation on database schema upgrades
+  5. Fix a bug in 2.8.0 release that caused DB tracking not to track messages
+
+Version 2.8.0 - 2019-03-23
+This is a an enhancement release:
+       **IMPORTANT NOTE**: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading
+
+  1. Add DB tracking message when pending information file detected indicating failed receipt of an MDN.
+  2. Changed the partnerships.xml sample to make it easier to understand and proivide examplke for additional partners
+  3. Enhanced documentation to reflect changes in the partnerships.xml and some cleaning uop and adding more detail.
+  4. Provide ability to define a custom table name for tracking messages to a database
+  5. Update documentation for mechanism to use a different table name in the tracking database
+
+Version 2.7.1 - 2019-03-11
+This is a minor enhancement release:
+       **IMPORTANT NOTE**: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading
+
+  1. Modify the way the application identifies the correct manifest file to determine title and version of the app.
+  2. Alter the file cleanup logging messages to make it easier to debig issues.
+  3. Correct minor spelling errors in logging statements
+
+Version 2.7.0 - 2019-03-03
+This is a minor enhancement release:
+       **IMPORTANT NOTE**: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading
+
+  1. Add an exclude filter option for the file polling module to support large files using a temporary extension until file is copied to directory
+  2. Add support for including extra parts of a parsed file name into the final parameter in the "format" attribute for file name parsing.
+  3. Support HTTP authentication on a per partnership basis.
+  4. Document the use of HTTP authentication, file filters and file name parsing functionality.
+
+Version 2.6.4 - 2019-02-01
+This is a minor bugfix release:
+       **IMPORTANT NOTE**: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading
+
+  1. Change the "Reporting-UA" MDN attribute to use the "http.user.agent" property value instead of the OpenAS2 application version if set.
+  2. Enhance documentation to show how to configure with multiple partners.
+
+
+Version 2.6.3 - 2018-11-14
+This is a minor bugfix release:
+       **IMPORTANT NOTE**: Please review upgrade notes  in the RELEASE-NOTES.md if you are upgrading
+
+  1. Make Async MDN sender use the "no_chunked_max_size" attribute to switch between chinked and Content-Length modes of sending
+  2. Add "sentdir" attribute to documentation for saving sent files on DirectoryPollingModule.
+
+Version 2.6.2 - 2018-09-26
+This is a minor enhancement and bgufix:
+       IMPORTANT NOTE: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading
+
+  1. Provide ability to use restricted headers in HTTP with partnership level overrides for the "Content-Transfer-Encoding" header
+  2. Allow unsigned MDN to be sent using the "none" keyword for the "as2_mdn_options" attribute
+  3. Use a Java 7 compatible method call for a Map class method that required Java 8
+
+
+Version 2.6.1 - 2018-09-09
+This is a minor enhancement:
+       IMPORTANT NOTE: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading
+
+  1. Allow MDN subject to use filename parsing functionality to set the text.
+ 
+Version 2.6.0 - 2018-08-31
+This is an enhancement and bugfix release:
+       IMPORTANT NOTE: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading
+
+  1. Support for deploying as a Windows service - see OpenAS2HowTo.pdf for details
+  2. Allow all components in the config.xml to use the attribute enhancer feature.
+  3. Fix possibility of logs getting cleared
+  4. Fix the DB logging module not being able to use the "tcp_server_start" parameter is always true in previous versions.
+  5. Optimise the move file method
+  6. Optimise the HTTP client handler
+  7. Rationalise the PID environment variable name to match between service script and startup script
+
 Version 2.5.0 - 2018-07-02
 This is an enhancement and bugfix release:
        IMPORTANT NOTE: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading

@@ -51,10 +51,12 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.InputStreamEntity;
+import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.ssl.SSLContexts;
 import org.openas2.OpenAS2Exception;
 import org.openas2.WrappedException;
@@ -76,6 +78,8 @@ public class HTTPUtil {
 	public static final String PARAM_READ_TIMEOUT = "readtimeout";
 	public static final String PARAM_CONNECT_TIMEOUT = "connecttimeout";
 	public static final String PARAM_SOCKET_TIMEOUT = "sockettimeout";
+	public static final String PARAM_HTTP_USER = "http_user";
+	public static final String PARAM_HTTP_PWD = "http_password";
 
 	public static final String HEADER_CONTENT_TYPE = "Content-Type";
 	public static final String HEADER_USER_AGENT = "User-Agent";
@@ -139,7 +143,8 @@ public class HTTPUtil {
 	};
 
 	public static String getHTTPResponseMessage(int responseCode) {
-		return httpResponseCodeToPhrase.getOrDefault((Integer)responseCode, "Unknown");
+		String code = httpResponseCodeToPhrase.get((Integer)responseCode);
+		return (code == null)?"Unknown":code;
 	}
 
 	public static byte[] readHTTP(InputStream inStream, OutputStream outStream, InternetHeaders headerCache,
@@ -253,7 +258,9 @@ public class HTTPUtil {
 	}
 	
 	/**
-	 * @param msg The message containing the 
+	 * Cleans specific headers to ensure AS2 compatibility
+	 * 
+	 * @param hdrs Headers to be cleaned
 	 */
 	public static void cleanIdHeaders(InternetHeaders hdrs) {
 		// Handle the case where the AS2 ID could be encapsulated in double quotes per RFC4130
@@ -312,13 +319,16 @@ public class HTTPUtil {
 	 * @param method GET, PUT, POST, DELETE, etc
 	 * @param url
 	 *            The remote connection string
-	 * @param HTTP
-	 *            headers to be sent
-	 * @param paramString
+	 * @param headers
+	 *            HTTP headers to be sent
+	 * @param params
 	 *            Parameters for the get. Can be null.
-	 * @param contentType
-	 *            Content-Type attribute string for the {@link paramString}. Can be
-	 *            null
+	 * @param inputStream
+	 *            Source stream for retrieving request data
+	 * @param options
+	 *            Any additional options for affecting request behaviour. Can NOT be null.
+	 * @param noChunkMaxSize
+	 *            The maximum size before chunking would need to be utilised. 0 disables check for chunking
 	 * @return ResponseWrapper
 	 * @throws Exception
 	 */
@@ -368,9 +378,21 @@ public class HTTPUtil {
 	        }
 	    }
 	    final HttpUriRequest request = rb.build();
-	    try (CloseableHttpClient httpClient = httpBuilder.build()) {
+	    
+	    String httpUser = options.get(HTTPUtil.PARAM_HTTP_USER);
+	    String httpPwd = options.get(HTTPUtil.PARAM_HTTP_PWD);
+	    if (httpUser != null) {
+		CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+		credentialsProvider.setCredentials(AuthScope.ANY, 
+		    new UsernamePasswordCredentials(httpUser, httpPwd));
+		httpBuilder.setDefaultCredentialsProvider(credentialsProvider);		
+	    }
+            BasicHttpContext localcontext = new BasicHttpContext();
+            BasicScheme basicAuth = new BasicScheme();
+            localcontext.setAttribute("preemptive-auth", basicAuth);
+            try (CloseableHttpClient httpClient = httpBuilder.build()) {
 	        ProfilerStub transferStub = Profiler.startProfile();
-	        try (CloseableHttpResponse response = httpClient.execute(request)) {
+	        try (CloseableHttpResponse response = httpClient.execute(request, localcontext)) {
 	            ResponseWrapper resp = new ResponseWrapper(response);
 	            Profiler.endProfile(transferStub);
 	            resp.setTransferTimeMs( transferStub.getMilliseconds());
