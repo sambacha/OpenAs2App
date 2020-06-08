@@ -8,10 +8,10 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.mail.Header;
 import javax.mail.internet.MimeBodyPart;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openas2.OpenAS2Exception;
@@ -92,9 +92,9 @@ public class MDNSenderModule extends HttpSenderModule {
 				throw new WrappedException(we);
 			}
 			if (logger.isTraceEnabled()) {
-				Enumeration<String> headers = mdn.getHeaders().getAllHeaderLines();
+				Enumeration<Header> headers = mdn.getHeaders().getAllHeaders();
 				if (headers.hasMoreElements())
-					logger.trace("MDN HEADERS SENT: " + StringUtils.join(headers, ";;") + msg.getLogMsgID());
+					logger.trace("MDN HEADERS SENT: " + HTTPUtil.printHeaders(headers, ";", "=") + msg.getLogMsgID());
 			}
 		}
 		// Save sent MDN for later examination
@@ -112,8 +112,12 @@ public class MDNSenderModule extends HttpSenderModule {
 			// Create a HTTP connection
 			if (logger.isDebugEnabled())
 				logger.debug("ASYNC MDN attempting connection to: " + url + mdn.getMessage().getLogMsgID());
+			long maxSize = msg.getPartnership().getNoChunkedMaxSize();
+		        Map<String, String> httpOptions = getHttpOptions();
+		        httpOptions.put(HTTPUtil.PARAM_HTTP_USER, msg.getPartnership().getAttribute(HTTPUtil.PARAM_HTTP_USER));
+		        httpOptions.put(HTTPUtil.PARAM_HTTP_PWD, msg.getPartnership().getAttribute(HTTPUtil.PARAM_HTTP_PWD));
 			ResponseWrapper resp = HTTPUtil.execRequest(HTTPUtil.Method.POST, url, mdn.getHeaders().getAllHeaders()
-					, null, mdn.getData().getInputStream(), getHttpOptions());
+					, null, mdn.getData().getInputStream(), httpOptions, maxSize);
 
 			int respCode = resp.getStatusCode();
 			// Check the HTTP Response code

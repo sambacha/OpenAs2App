@@ -1,32 +1,20 @@
 #              OpenAS2 Server
-#              Version 2.5.0
+#              Version 2.10.0
 #              RELEASE NOTES
 -----
-The OpenAS2 project is pleased to announce the release of OpenAS2 2.5.0
+The OpenAS2 project is pleased to announce the release of OpenAS2 2.10.0
 
-The release download file is: OpenAS2Server-2.5.0.zip
+The release download file is: OpenAS2Server-2.10.0.zip
 
 The zip file contains a PDF document (OpenAS2HowTo.pdf) providing information on installing and using the application.
 
-Version 2.5.0 - 2018-07-02
-This is an enhancement and bugfix release:
-       **IMPORTANT NOTE**: Please review upgrade notes below if you are upgrading
+Version 2.10.0 - 2019-09-29
+This is a minor enhancement release:
+       **IMPORTANT NOTE**: Please review upgrade notes in the RELEASE-NOTES.md if you are upgrading
 
-  1. Supports Java 7 and up. Java 6 (Java 1.6) is no longer supported.
-  2. Provide "log" command to dynamically alter logging levels in real time without restarting the application.
-  3. Rationalize MDN sending so that Synchronous and Asynchronous are processed by a single module. NB See upgrade notes for class name change.
-  4. Move HTTP header folding removal to HTTPUtils for centralised management
-  5. Make the HTTP "User-Agent" header configurable via a property.
-  6. Default "Message-Id" format complies with https://www.ietf.org/rfc/rfc2822.txt section 3.6.4.
-  7. Provide ability to configure emails for successfully received and sent files.
-  8. Upgrade libraries to the latest release.
-  9. Support using system environment variables in config.xml
-  10. Change attribute name for overriding Message-ID format at partnership level to match name at system level. NB See upgrade notes for attribute name change.
-  11. Allow modules to have scheduled tasks using the HasSchedule implementation.
-  12. Add scheduled task to detect failed sent messages where files are not cleaned up. (Fixes https://sourceforge.net/p/openas2/tickets/5/)
-  13. Allow attributes in partnership element to reference other partnership elements and resolve the references at load time.
-  14. Default sample in partnerships.xml for "as2_mdn_options" to use the "sign" attribute value for the micalg value.
-  15. Support AS2 ID with spaces in the value.
+  1. Components in the config.xml file are now enabled and disabled by an "enabled" attribute on the component. See the documentation in the section 6 "Application Configuration" on how this works.
+  2. Support using a custom properties file to override properties in the config.xml file. See the documentation in the section 6.1 "System Properties" on how this works.
+  3. If upgrading please see the upgrade notes to convert your config.xml
 
 ##Upgrade Notes
  See the openAS2HowTo appendix for the general process on upgrading OpenAS2.
@@ -34,10 +22,23 @@ This is an enhancement and bugfix release:
 
  **You must review all notes for the relevant intermediate versions from your version to this release version.**
 
+### If upgrading from versions older than 2.9.4:
+      1. There is a script in the "upgrade" folder : <installDir>/bin/upgrade/config_transform.sh.
+         This script can be run without parameters to get usage message.
+         The simplest way to run it is to open a terminal in the upgrade folder and run:
+            config_transform.sh <path to old config.xml file>
+          This will produce a file named config.xml.new in the upgrade folder. Copy this file to the config.xml in the new OpenAS2 version.
+          Windows user can use the new Linux shell to run the above script or run this command from within the upgrade folder:
+         java -jar lib/saxon9he.jar -xsl:config.xslt  -o:config.xml.new -s:<path to old config.xml file>
+
+### If upgrading from versions older than 2.9.0:
+      1. Run the schema upgrade process as defined in the Appendix for the relevant database you are tracking messages in.
+
 ### If upgrading from versions older than 2.5.0:
-      1. Change the name of the MDN sender module from "AsynchMDNSenderModule" to "MDNSenderModule" in the config.xml if using your existing config.xml file in the upgrade.
+      1. Change the name of the MDN sender module from "AsynchMDNSenderModule" to "MDNSenderModule" in the config.xml if using your existing config.xml file in the upgrade. If "AsynchMDNSenderModule" is not in the config then add the following: <module classname="org.openas2.processor.sender.MDNSenderModule" retries="3"/>
       2. Change the name of the partnership attribute "messageid" to "as2_message_id_format" if used in any partnership definition.
       3. Change the "as2_mdn_options" attribute to use $attribute.sign$ instead of hard coded signing algorithm
+      4. If you experience issues with partners failing that were working in the previous version, check the troubleshooting section of the OpenAS2HowTo guide - specifically the issues around Content Transfer Encoding and Content Length/Chunking
 
 
 ### If upgrading from versions older than 2.4.1:
