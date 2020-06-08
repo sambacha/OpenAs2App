@@ -14,12 +14,10 @@ matrix:
         - sudo apt-get -y install openjdk-8-jdk-headless
         - sudo update-alternatives --display java
       script: ./mvnw test
-    - os: windows
-      language: shell
-      before_install:
-        - choco install openjdk
-        - choco install maven
-        - export JAVA_HOME="C:\Program Files\OpenJDK\jdk-13"
-        - ls -l "$JAVA_HOME"
-        - ls -l "$JAVA_HOME/bin"
-      script: export JAVA_HOME="C:\Program Files\OpenJDK\jdk-13" && ./mvnw test
+      
+language: bash
+sudo: required
+services:
+  - docker
+script:
+  - docker run -it -v $(pwd):/root/sources -w /root/sources maven:3.3.3-jdk-8 mvn clean install
