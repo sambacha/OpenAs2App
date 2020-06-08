@@ -24,9 +24,7 @@ public class Partnership implements Serializable {
 
     /* partnership definition attributes */
     public static final String PA_SUBJECT = "subject"; // Subject sent in messages    
-    public static final String PA_CONTENT_TYPE = "content_type"; // optional content type for mime parts
     public static final String PA_CONTENT_TRANSFER_ENCODING = "content_transfer_encoding"; // optional content transfer enc value
-    public static final String PA_SET_CONTENT_TRANSFER_ENCODING_HTTP = "set_content_transfer_encoding_http_header"; // See as an HTTP header
     public static final String PA_REMOVE_PROTECTION_ATTRIB = "remove_cms_algorithm_protection_attrib"; // Some AS2 systems do not support the attribute
     public static final String PA_SET_CONTENT_TRANSFER_ENCODING_OMBP = "set_content_transfer_encoding_on_outer_mime_bodypart"; // optional content transfer enc value
 	public static final String PA_RESEND_REQUIRES_NEW_MESSAGE_ID = "resend_requires_new_message_id"; // list of nme/value pairs for setting custom mime headers
@@ -45,7 +43,6 @@ public class Partnership implements Serializable {
 	public static final String PA_CUSTOM_MIME_HEADER_NAMES_REGEX_ON_FILENAME = "custom_mime_header_names_regex_on_filename"; // Regex to split filename into values
 	public static final String PAIB_NAMES_FROM_FILENAME = "attribute_names_from_filename"; // List of attribute names to be set from parsed filename
 	public static final String PAIB_VALUES_REGEX_ON_FILENAME = "attribute_values_regex_on_filename"; // Regex to split filename into values
-	public static final String PA_HTTP_NO_CHUNKED_MAX_SIZE = "no_chunked_max_size"; // Disables chunked HTTP transfer when file size is set larger as 0 
 
 	/*
 	 * If set and an error occurs while processing a document, an error MDN will not be sent. This
@@ -230,19 +227,4 @@ public class Partnership implements Serializable {
     {
     	return "true".equalsIgnoreCase(getAttribute(Partnership.PA_REMOVE_PROTECTION_ATTRIB));
     }
-    
-    public boolean isNoChunkedTransfer()
-    {
-        return (getNoChunkedMaxSize() > 0L);
-    }
-    
-    public long getNoChunkedMaxSize()
-    {
-        long max = 0L;
-        try {
-            max = Long.valueOf(getAttribute(Partnership.PA_HTTP_NO_CHUNKED_MAX_SIZE));
-        } catch (Exception ignored) {}
-        return max;
-    }
-
 }

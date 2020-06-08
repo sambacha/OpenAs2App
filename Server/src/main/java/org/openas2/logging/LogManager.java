@@ -62,22 +62,21 @@ public class LogManager {
      * @param clazzName - the name of the class that the log was generated in
      * @param msg       - the logging object to create the message from
      */
-    public void log(Level level, String clazzName, @Nonnull Object msg, Throwable t)
+    public void log(Level level, String clazzName, @Nonnull Object msg)
     {
         if (loggers.isEmpty())
         {
-            //System.out.println("\n\t    WARNING!!!!\n\tNo loggers configured. Using default logger.");
-            DEFAULT_LOGGER.log(level, clazzName + ": " + msg.toString(), null, t);
+            DEFAULT_LOGGER.log(level, clazzName + ": " + msg.toString(), null);
         } else
         {
             for (Logger logger : loggers)
             {
                 if (msg instanceof Message)
                 {
-                    logger.log(level, clazzName + ": " + ((Message) msg).getLogMsg(), (Message) msg, t);
+                    logger.log(level, clazzName + ": " + ((Message) msg).getLogMsg(), (Message) msg);
                 } else
                 {
-                    logger.log(level, clazzName + ": " + msg.toString(), null, t);
+                    logger.log(level, clazzName + ": " + msg.toString(), null);
                 }
             }
         }

@@ -69,7 +69,6 @@ public class XMLUtil {
             Component obj = (Component) objClass.newInstance();
 
             Map<String, String> parameters = XMLUtil.mapAttributes(node);
-            AS2Util.attributeEnhancer(parameters);
 
             updateDirectories(session.getBaseDirectory(), parameters);
 
@@ -99,19 +98,6 @@ public class XMLUtil {
         }
 
         return null;
-    }
-
-    public static String getNodeAttributeValue(Node node, String attrib, boolean enhance) throws OpenAS2Exception
-    {
-        Node attribNode = node.getAttributes().getNamedItem(attrib);
-        if (attribNode == null) return null;
-        String val = attribNode.getNodeValue();
-        if (!enhance) return val;
-        Map<String, String> map = new HashMap<String, String>();
-        map.put(attrib, val);
-        AS2Util.attributeEnhancer(map);
-        return map.get(attrib);
-
     }
 
     public static Map<String, String> mapAttributeNodes(NodeList nodes, String nodeName, String nodeKeyName,
@@ -224,24 +210,14 @@ public class XMLUtil {
             }
         }
     }
-
-    public static String toString(Node node, boolean omitXmlDeclaration) throws TransformerException {
-	return domToString(new DOMSource(node), omitXmlDeclaration);
-    }
     
     public static String domToString(Document doc) throws TransformerException {
-	return domToString(new DOMSource(doc), true);
-    }
-    
-    public static String domToString(DOMSource ds, boolean omitXmlDeclaration) throws TransformerException {
     	TransformerFactory tf = TransformerFactory.newInstance();
     	Transformer transformer = tf.newTransformer();
-    	if (omitXmlDeclaration == true) {
-            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-         }
+    	transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
     	transformer.setOutputProperty(OutputKeys.INDENT, "no");
     	StringWriter writer = new StringWriter();
-    	transformer.transform(ds, new StreamResult(writer));
+    	transformer.transform(new DOMSource(doc), new StreamResult(writer));
     	return writer.toString().replaceAll("\n|\r", "");
     }
 }

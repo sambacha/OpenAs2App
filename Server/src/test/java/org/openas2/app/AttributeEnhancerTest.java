@@ -11,7 +11,6 @@ import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.openas2.OpenAS2Exception;
 import org.openas2.util.AS2Util;
-import org.openas2.util.Properties;
 
 @RunWith(MockitoJUnitRunner.class)
 
@@ -24,8 +23,6 @@ public class AttributeEnhancerTest {
 		attribs.put("key2", "ValueOfKey2");
 		attribs.put("key3", "Replaced with $attribute.key1$");
 		attribs.put("key4", "Replaced with $attribute.key2$ and $attribute.key1$");
-		attribs.put("key5", "Replaced with $properties.storageBaseDir$");
-		Properties.setProperty("storageBaseDir", "%home%/../data");
 		
 		try {
 			AS2Util.attributeEnhancer(attribs);
@@ -35,6 +32,5 @@ public class AttributeEnhancerTest {
 		}
 		assertThat("Key 3 has been replaced", attribs.get("key3"), equalTo("Replaced with ValueOfKey1"));
 		assertThat("Key 4 has been replaced", attribs.get("key4"), equalTo("Replaced with ValueOfKey2 and ValueOfKey1"));
-		assertThat("Key 5 has been replaced", attribs.get("key5"), equalTo("Replaced with %home%/../data"));
 	}
 }

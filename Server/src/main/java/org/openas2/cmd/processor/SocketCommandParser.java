@@ -25,6 +25,7 @@ import org.xml.sax.helpers.DefaultHandler;
  * @author joseph mcverry
  *
  */
+
 public class SocketCommandParser extends DefaultHandler
 		implements
 			EntityResolver,
